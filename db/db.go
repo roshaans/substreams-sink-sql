@@ -67,7 +67,7 @@ func NewLoader(
 	var db *sql.DB
 	fmt.Println(dsn.driver)
 	if dsn.driver == "clickhouse" {
-		conn_str := fmt.Sprintf("%s:%s", dsn.host, dsn.port)
+		conn_str := fmt.Sprintf("%s:%d", dsn.host, dsn.port)
 		conn := clickhouse.OpenDB(&clickhouse.Options{
 			Addr: []string{conn_str},
 			Auth: clickhouse.Auth{
