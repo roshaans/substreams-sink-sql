@@ -248,7 +248,21 @@ func convertToType(value string, valueType reflect.Type) (any, error) {
 			return newInt, nil
 		}
 		return "", fmt.Errorf("unsupported pointer type %s", valueType)
+
+	case reflect.Interface:
+		if valueType.String() == "clickhouse.Decimal" {
+			return convertToDecimal(value, valueType)
+		}
+		return value, nil
 	default:
 		return value, nil
 	}
+}
+
+func convertToDecimal(value string, valueType reflect.Type) (any, error) {
+	dec, ok := new(big.Float).SetString(value)
+	if !ok {
+		return nil, fmt.Errorf("could not convert %s to decimal", value)
+	}
+	return dec, nil
 }
