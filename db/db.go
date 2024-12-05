@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/roshaans/clickhouse-go/v2"
 	"github.com/roshaans/schema"
 	"github.com/streamingfast/logging"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
