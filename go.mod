@@ -6,11 +6,11 @@ toolchain go1.24.2
 
 require (
 	github.com/AfterShip/clickhouse-sql-parser v0.4.5-0.20250321030459-a0eef0f2459e
-	github.com/ClickHouse/clickhouse-go/v2 v2.25.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.28.2
 	github.com/bobg/go-generics/v2 v2.2.2
 	github.com/drone/envsubst v1.0.3
 	github.com/golang/protobuf v1.5.4
-	github.com/jimsmart/schema v0.2.0
+	github.com/jimsmart/schema v0.2.1
 	github.com/lib/pq v1.10.9
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
@@ -115,6 +115,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/roshaans/clickhouse-go/v2 v2.0.0-20240905021010-66038df08b08 // indirect
+	github.com/roshaans/schema v0.0.0-20240905030110-c6269f5b2a44 // indirect
 	github.com/schollz/closestmatch v2.1.0+incompatible // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sercand/kuberesolver/v5 v5.1.1 // indirect
