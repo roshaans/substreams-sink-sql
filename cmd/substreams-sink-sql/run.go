@@ -48,6 +48,7 @@ func sinkRunE(cmd *cobra.Command, args []string) error {
 	sinker2.RegisterMetrics()
 
 	dsnString := args[0]
+	fmt.Printf("Using DSN: %s\n", dsnString)
 	manifestPath := args[1]
 	blockRange := ""
 	if len(args) > 2 {

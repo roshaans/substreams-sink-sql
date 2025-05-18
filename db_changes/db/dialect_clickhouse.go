@@ -37,10 +37,12 @@ func NewClickhouseDialect(schemaName string, cursorTableName string, cluster str
 // driver doesn't support Transactions for multiple tables. The only way to add in batches is
 // creating a transaction for a table, adding all rows and commiting it.
 func (d ClickhouseDialect) Flush(tx Tx, ctx context.Context, l *Loader, outputModuleHash string, lastFinalBlock uint64) (int, error) {
+	l.logger.Info("starting Clickhouse flush")
 	var entryCount int
 	for entriesPair := l.entries.Oldest(); entriesPair != nil; entriesPair = entriesPair.Next() {
 		tableName := entriesPair.Key
 		entries := entriesPair.Value
+		l.logger.Debug("beginning transaction", zap.String("table", tableName))
 		tx, err := l.DB.BeginTx(ctx, nil)
 		if err != nil {
 			return entryCount, fmt.Errorf("failed to begin db transaction")
@@ -60,6 +62,7 @@ func (d ClickhouseDialect) Flush(tx Tx, ctx context.Context, l *Loader, outputMo
 			EscapeIdentifier(d.schemaName),
 			EscapeIdentifier(tableName),
 			strings.Join(columns, ","))
+		l.logger.Debug("preparing insert statement", zap.String("query", query))
 		batch, err := tx.Prepare(query)
 		if err != nil {
 			return entryCount, fmt.Errorf("failed to prepare insert into %q: %w", tableName, err)
@@ -80,17 +83,20 @@ func (d ClickhouseDialect) Flush(tx Tx, ctx context.Context, l *Loader, outputMo
 				return entryCount, fmt.Errorf("failed to get values: %w", err)
 			}
 
+			l.logger.Debug("executing insert", zap.String("table", tableName), zap.Any("values", values))
 			if _, err := batch.ExecContext(ctx, values...); err != nil {
 				return entryCount, fmt.Errorf("executing for entry %q: %w", values, err)
 			}
 		}
 
+		l.logger.Debug("committing transaction", zap.String("table", tableName))
 		if err := tx.Commit(); err != nil {
 			return entryCount, fmt.Errorf("failed to commit db transaction: %w", err)
 		}
 		entryCount += entries.Len()
 	}
 
+	l.logger.Info("finished Clickhouse flush", zap.Int("entry_count", entryCount))
 	return entryCount, nil
 }
 

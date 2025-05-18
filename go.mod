@@ -6,12 +6,12 @@ toolchain go1.24.2
 
 require (
 	github.com/AfterShip/clickhouse-sql-parser v0.4.5-0.20250321030459-a0eef0f2459e
-	github.com/ClickHouse/clickhouse-go/v2 v2.28.2
 	github.com/bobg/go-generics/v2 v2.2.2
 	github.com/drone/envsubst v1.0.3
 	github.com/golang/protobuf v1.5.4
-	github.com/jimsmart/schema v0.2.1
 	github.com/lib/pq v1.10.9
+	github.com/roshaans/clickhouse-go/v2 v2.0.0-20240905021010-66038df08b08
+	github.com/roshaans/schema v0.0.0-20240905030110-c6269f5b2a44
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
@@ -40,6 +40,7 @@ require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.28.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.49.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.50.0 // indirect
@@ -115,8 +116,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/roshaans/clickhouse-go/v2 v2.0.0-20240905021010-66038df08b08 // indirect
-	github.com/roshaans/schema v0.0.0-20240905030110-c6269f5b2a44 // indirect
 	github.com/schollz/closestmatch v2.1.0+incompatible // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sercand/kuberesolver/v5 v5.1.1 // indirect

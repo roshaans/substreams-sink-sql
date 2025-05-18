@@ -161,10 +161,84 @@ func (l *Loader) FlushNeeded() bool {
 }
 
 func (l *Loader) LoadTables(schemaName string, cursorTableName string, historyTableName string) error {
-	schemaTables, err := schema.Tables(l.DB)
+	l.logger.Info("starting LoadTables",
+		zap.String("schema_name", schemaName),
+		zap.String("cursor_table", cursorTableName),
+		zap.String("history_table", historyTableName),
+	)
+
+	query := `
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema = ?
+	`
+	rows, err := l.DB.Query(query, schemaName)
 	if err != nil {
-		return fmt.Errorf("retrieving table and schemaName: %w", err)
+		l.logger.Error("failed to query tables", zap.Error(err))
+		return fmt.Errorf("failed to query tables: %w", err)
 	}
+	defer rows.Close()
+
+	schemaTables := make(map[[2]string][]*sql.ColumnType)
+	var foundTables []string
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return fmt.Errorf("failed to scan table name: %w", err)
+		}
+		foundTables = append(foundTables, tableName)
+
+		if tableName != "dex_trades" && tableName != cursorTableName {
+			l.logger.Debug("skipping column type fetch for table", zap.String("table", tableName))
+			continue
+		}
+
+		query := fmt.Sprintf("SELECT * FROM %s.%s LIMIT 1", schemaName, tableName)
+		l.logger.Debug("attempting column type fetch",
+			zap.String("table", tableName),
+			zap.String("query", query),
+			zap.String("schema", schemaName),
+			zap.String("tableName", tableName),
+			zap.Bool("is_cursor_table", tableName == cursorTableName),
+			zap.Bool("is_history_table", tableName == historyTableName),
+		)
+		cols, err := l.DB.Query(query)
+		if err != nil {
+			l.logger.Warn("skipping table due to query error",
+				zap.String("table", tableName),
+				zap.String("query", query),
+				zap.Error(err),
+			)
+			continue
+		}
+		l.logger.Debug("query executed successfully", zap.String("table", tableName))
+
+		var columnTypes []*sql.ColumnType
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					l.logger.Warn("panic while fetching column types", zap.String("table", tableName), zap.Any("recover", r))
+					columnTypes = nil
+				}
+			}()
+			columnTypes, err = cols.ColumnTypes()
+		}()
+		cols.Close()
+		if err != nil {
+			l.logger.Warn("skipping table due to column type error", zap.String("table", tableName), zap.Error(err))
+			continue
+		}
+		if columnTypes == nil {
+			l.logger.Warn("skipping table due to nil column types", zap.String("table", tableName))
+			continue
+		}
+		schemaTables[[2]string{schemaName, tableName}] = columnTypes
+	}
+
+	l.logger.Debug("retrieved schema tables",
+		zap.Int("table_count", len(schemaTables)),
+		zap.Strings("table_names", foundTables),
+	)
 
 	seenCursorTable := false
 	seenHistoryTable := false
@@ -175,18 +249,26 @@ func (l *Loader) LoadTables(schemaName string, cursorTableName string, historyTa
 			zap.String("table_name", tableName),
 		)
 
-		if schemaTableName[0] != schemaName {
-			continue
-		}
-
 		if tableName == cursorTableName {
+			l.logger.Info("matched cursor table name", zap.String("table_name", tableName))
+			l.logger.Debug("validating cursor table", zap.String("table_name", tableName), zap.Int("column_count", len(columns)))
+			for _, col := range columns {
+				l.logger.Debug("cursor table column",
+					zap.String("name", col.Name()),
+					zap.String("db_type", col.DatabaseTypeName()),
+					zap.String("scan_type", fmt.Sprintf("%v", col.ScanType())),
+				)
+			}
 			if err := l.validateCursorTables(columns, schemaName, cursorTableName); err != nil {
+				l.logger.Error("cursor table validation failed", zap.String("table_name", tableName), zap.Error(err))
 				return fmt.Errorf("invalid cursors table: %w", err)
 			}
 
+			l.logger.Info("cursor table validated successfully", zap.String("table_name", tableName))
 			seenCursorTable = true
 		}
 		if tableName == historyTableName {
+			l.logger.Debug("found history table", zap.String("table_name", tableName))
 			seenHistoryTable = true
 		}
 
@@ -207,8 +289,10 @@ func (l *Loader) LoadTables(schemaName string, cursorTableName string, historyTa
 
 		l.tables[tableName], err = NewTableInfo(schemaName, tableName, key, columnByName)
 		if err != nil {
+			l.logger.Error("failed to create TableInfo", zap.String("table_name", tableName), zap.Error(err))
 			return fmt.Errorf("invalid table: %w", err)
 		}
+		l.logger.Debug("registered table", zap.String("table_name", tableName), zap.Int("column_count", len(columns)))
 	}
 
 	if !seenCursorTable {
@@ -219,6 +303,12 @@ func (l *Loader) LoadTables(schemaName string, cursorTableName string, historyTa
 	}
 
 	l.cursorTable = l.tables[cursorTableName]
+
+	l.logger.Info("finished LoadTables",
+		zap.Bool("seen_cursor_table", seenCursorTable),
+		zap.Bool("seen_history_table", seenHistoryTable),
+		zap.Int("registered_table_count", len(l.tables)),
+	)
 
 	return nil
 }
